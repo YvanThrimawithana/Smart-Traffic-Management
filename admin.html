@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://www.gstatic.com/firebasejs/9.1.3/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.1.3/firebase-firestore-compat.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;700&display=swap" rel="stylesheet">
+
+    <title>Traffic Light Control Panel</title>
+    <style>
+        body {
+            font-family: 'Poppins', sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #000000 ;
+            color: #ffffff;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 1410px;
+            margin-left: 1.9%;
+            padding-top: 2%;
+            display: flex;
+            justify-content: space-between;
+            
+        }
+
+        .panel {
+            flex: 1;
+            margin-right: 20px;
+            background-color: #191c24;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+
+        .panel-header {
+            padding: 20px;
+            text-align: center;
+            background-color: #191c24;
+            border-bottom: 1px solid #ddd;
+        }
+
+        .panel-header h1 {
+            margin: 0;
+            font-size: 24px;
+            color: #ffffff;
+        }
+
+        .video-container {
+            position: relative;
+            width: 100%;
+            padding-top: 56.25%;
+            /* 16:9 aspect ratio */
+            overflow: hidden;
+        }
+
+        .video-stream {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .control-buttons {
+            text-align: center;
+            padding: 20px;
+        }
+
+        .button {
+            padding: 10px 20px;
+            background-color: #4CAF50;
+            color: #fff;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 0 10px;
+            font-size: 16px;
+            transition: background-color 0.3s;
+            width: 30%;
+        }
+
+        .button:hover {
+            background-color: #45a049;
+        }
+
+        .chart-container {
+            margin-top: 50px;
+            text-align: center;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding-bottom: 5%;
+            maring-left: 25%;
+        }
+
+        .chart-wrapper {
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.808);
+            overflow: hidden;
+            margin: 0 10px;
+            width: 45%;
+            background-color: white;
+   
+        }
+
+        canvas {
+            width: 100%;
+        }
+.main-header{
+    padding-top: 2%;
+    text-align: center;
+
+        }
+    </style>
+</head>
+
+<body>
+    <h1 class="main-header">Traffic Management System</h1>
+    <div class="container">
+        <div class="panel">
+            <div class="panel-header">
+                <h1>Main Traffic Light Control</h1>
+            </div>
+            <div class="video-container">
+                <img class="video-stream main-stream" src="" alt="Main Traffic Light Stream">
+            </div>
+            
+        </div>
+        <div class="panel">
+            <div class="panel-header">
+                <h1>By Traffic Light Control</h1>
+            </div>
+            <div class="video-container">
+                <img class="video-stream auxiliary-stream" src="" alt="Auxiliary Traffic Light Stream">
+            </div>
+           
+        </div>
+        <div class="panel">
+            <div class="panel-header">
+                <h1>Opp road Traffic Light Control</h1>
+            </div>
+            <div class="video-container">
+                <img class="video-stream third-stream" src="" alt="Third Traffic Light Stream">
+            </div>
+            
+        </div>
+    </div>
+
+    <div class="chart-container">
+        <div class="chart-wrapper">
+            <h1 style="color: #171717;">Current Statistics</h1>
+            <canvas id="actualChart"></canvas>
+        </div>
+        <div class="chart-wrapper">
+            <h1 style="color: #171717;">Predicted Statistics</h1>
+            <canvas id="predictiveChart"></canvas>
+        </div>
+        <div class="chart-wrapper">
+            <h1 style="color: #171717;">Ambulance Detection</h1>
+            <canvas id="ambulanceChart"></canvas>
+        </div>
+    </div>
+
+    <script>
+        // Function to send color commands to the ESP32-CAM
+        function setColor(color) {
+            // You can implement the logic to send commands to the ESP32-CAM here
+            console.log(`Setting color to ${color}`);
+            // For example, you can use AJAX to send requests to your ESP32-CAM server
+            // and handle the color setting logic there
+        }
+
+        // Function to update the video stream
+        function updateStream() {
+            const mainStream = document.querySelector('.main-stream');
+            const auxiliaryStream = document.querySelector('.auxiliary-stream');
+            const thirdStream = document.querySelector('.third-stream');
+
+            //Update main stream
+            auxiliaryStream.src = `http://192.168.208.46/cam-hi.jpg?_t=${new Date().getTime()}`;
+
+            // // Update auxiliary stream
+            mainStream.src = `http://192.168.208.23/cam-lo.jpg?_t=${new Date().getTime()}`;
+            thirdStream.src = `http://192.168.208.203/cam-lo.jpg?_t=${new Date().getTime()}`;
+           
+        }
+
+        // Call the function to start updating the stream
+        updateStream();
+        setInterval(updateStream, 500); // Update stream every 5 seconds
+
+      
+    
+
+        
+
+
+        // Firebase configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyCHrQJbyTPsLxkqmrZB-EqdLU4Q2vOKH8Q",
+            authDomain: "iotproject-e09e8.firebaseapp.com",
+            databaseURL: "https://iotproject-e09e8-default-rtdb.asia-southeast1.firebasedatabase.app",
+            projectId: "iotproject-e09e8",
+            storageBucket: "iotproject-e09e8.appspot.com",
+            messagingSenderId: "486549838632",
+            appId: "1:486549838632:web:b2df18fac5f1f79dff0e1d"
+        };
+
+        // Initialize Firebase
+        const firebaseApp = firebase.initializeApp(firebaseConfig);
+        const db = firebaseApp.firestore();
+
+        // Generate predictive data based on existing data (simple example, you might need more sophisticated methods)
+        function generatePredictiveData(actualData) {
+            const predictiveData = [];
+            for (let i = 0; i < actualData.length; i++) {
+                // Simple example: doubling the previous value for prediction
+                predictiveData.push(actualData[i] * 2);
+            }
+            return predictiveData;
+        }
+
+        // Function to fetch actual and predicted data and render the chart
+        function fetchDataAndDisplay() {
+    db.collection('car_count').get()
+        .then(snapshot => {
+            const timeSections = [];
+            const mainData = [];
+            const byData = [];
+            const oppData = []; // New array for Opp Road data
+
+            snapshot.forEach(doc => {
+                const timeSection = doc.id; // Document ID represents the time section
+                const data = doc.data();
+                const mainCount = data.main;
+                const byCount = data.by;
+                const oppCount = data.opp_road; // Get Opp Road count from Firebase data
+
+                timeSections.push(timeSection);
+                mainData.push(mainCount);
+                byData.push(byCount);
+                oppData.push(oppCount); // Push Opp Road count to array
+            });
+
+            const predictiveMainData = generatePredictiveData(mainData);
+            const predictiveByData = generatePredictiveData(byData);
+            const predictiveOppData = generatePredictiveData(oppData); // Generate predictive data for Opp Road
+
+            renderCharts(timeSections, mainData, byData, oppData, predictiveMainData, predictiveByData, predictiveOppData); // Pass Opp Road data to renderCharts function
+        })
+        .catch(error => {
+            console.error('Error getting documents: ', error);
+        });
+}
+
+// Render the charts with actual and predictive data
+function renderCharts(timeSections, mainData, byData, oppData, predictiveMainData, predictiveByData, predictiveOppData) {
+    const ctxActual = document.getElementById('actualChart').getContext('2d');
+    const actualChart = new Chart(ctxActual, {
+        type: 'bar',
+        data: {
+            labels: timeSections,
+            datasets: [{
+                    label: 'Main Road (Actual)',
+                    data: mainData,
+                    backgroundColor: 'rgba(22, 58, 16, 0.8)',
+                    borderColor: 'rgba(54, 162, 235, 1)',
+                    borderWidth: 1
+                },
+                {
+                    label: 'By Road (Actual)',
+                    data: byData,
+                    backgroundColor: '#198754',
+                    borderColor: 'rgba(255, 99, 132, 1)',
+                    borderWidth: 1
+                },
+                {
+                    label: 'Opp Road (Actual)', // Add Opp Road label
+                    data: oppData,
+                    backgroundColor: '#ffc107', // Adjust color as needed
+                    borderColor: 'rgba(255, 205, 86, 1)',
+                    borderWidth: 1
+                }
+            ]
+        },
+        options: {
+            scales: {
+                y: {
+                    title: {
+                        display: true,
+                        text: 'Vehicle Count'
+                    }
+                },
+                x: {
+                    title: {
+                        display: true,
+                        text: 'Time Sections'
+                    }
+                }
+            }
+        }
+    });
+
+    const ctxPredictive = document.getElementById('predictiveChart').getContext('2d');
+    const predictiveChart = new Chart(ctxPredictive, {
+        type: 'bar',
+        data: {
+            labels: timeSections,
+            datasets: [{
+                    label: 'Main Road (Predictive)',
+                    data: predictiveMainData,
+                    backgroundColor: 'rgba(22, 58, 16, 0.8)',
+                    borderColor: 'rgba(255, 255, 255, 0.8)',
+                    borderWidth: 1,
+                    borderDash: [5, 5]
+                },
+                {
+                    label: 'By Road (Predictive)',
+                    data: predictiveByData,
+                    backgroundColor: '#198754',
+                    borderColor: 'rgba(60, 55, 57, 0.8)',
+                    borderWidth: 1,
+                    borderDash: [5, 5]
+                },
+                {
+                    label: 'Opp Road (Predictive)', // Add Opp Road label
+                    data: predictiveOppData,
+                    backgroundColor: '#ffc107', // Adjust color as needed
+                    borderColor: 'rgba(255, 205, 86, 0.8)',
+                    borderWidth: 1,
+                    borderDash: [5, 5]
+                }
+            ]
+        },
+        options: {
+            scales: {
+                y: {
+                    title: {
+                        display: true,
+                        text: 'Vehicle Count'
+                    }
+                },
+                x: {
+                    title: {
+                        display: true,
+                        text: 'Time Sections'
+                    }
+                }
+            }
+        }
+    });
+}
+
+// Function to fetch ambulance detection data and render the chart
+function fetchAmbulanceDataAndDisplay() {
+    db.collection('detections').get()
+        .then(snapshot => {
+            const streetData = {}; // Object to store street-wise detection counts
+
+            snapshot.forEach(doc => {
+                const data = doc.data();
+                const detectionTime = data.detection_time.toDate(); // Convert Firebase Timestamp to JavaScript Date
+                const streetName = data.stream_name;
+
+                // Format detection time for x-axis label (e.g., "Apr 6, 2024 4:15 PM")
+                const formattedTime = detectionTime.toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true });
+
+                if (!streetData[streetName]) {
+                    streetData[streetName] = {};
+                }
+                // Increment count for each street
+                streetData[streetName][formattedTime] = (streetData[streetName][formattedTime] || 0) + 1;
+            });
+
+            renderAmbulanceChart(streetData);
+        })
+        .catch(error => {
+            console.error('Error getting ambulance detection documents: ', error);
+        });
+}
+
+// Render the ambulance detection chart
+function renderAmbulanceChart(streetData) {
+    const streetNames = Object.keys(streetData);
+    const labels = Object.keys(streetData[streetNames[0]]); // Use the labels from the first street
+
+    const datasets = streetNames.map(streetName => ({
+        label: streetName,
+        data: labels.map(label => streetData[streetName][label] || 0), // Get count for each label or default to 0
+        backgroundColor: getRandomColor(), // Random color for each street
+        borderColor: 'rgba(255, 255, 255, 0.8)',
+        borderWidth: 1
+    }));
+
+    const ctxAmbulance = document.getElementById('ambulanceChart').getContext('2d');
+    const ambulanceChart = new Chart(ctxAmbulance, {
+        type: 'bar',
+        data: {
+            labels: labels,
+            datasets: datasets
+        },
+        options: {
+            scales: {
+                y: {
+                    title: {
+                        display: true,
+                        text: 'Detection Count'
+                    },
+                    min: 0, // Set minimum y-axis value to 0
+                    suggestedMax: 10 // Adjust as needed
+                },
+                x: {
+                    title: {
+                        display: true,
+                        text: 'Time'
+                    }
+                }
+            }
+        }
+    });
+}
+
+// Function to generate a random color
+function getRandomColor() {
+    const letters = '0123456789ABCDEF';
+    let color = '#';
+    for (let i = 0; i < 6; i++) {
+        color += letters[Math.floor(Math.random() * 16)];
+    }
+    return color;
+}
+
+fetchDataAndDisplay(); // Fetch and display actual and predictive data
+fetchAmbulanceDataAndDisplay(); // Fetch and display ambulance detection data
+
+        
+    </script>
+</body>
+
+</html>
