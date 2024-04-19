@@ -49,11 +49,17 @@ Robust admin panel to view and monitor traffic flow along with statistical data 
 
 # Screenshots
 
-![image](https://github.com/YvanThrimawithana/Smart-Traffic-Management/assets/132426595/7f517c46-3ea0-4837-a8fe-462f2ff9d2ea)
+ ![image](https://github.com/YvanThrimawithana/Smart-Traffic-Management-System/assets/132426595/7932942e-08c0-433e-bfb8-35c1225c222b)
 
-![image](https://github.com/YvanThrimawithana/Smart-Traffic-Management/assets/132426595/8c663bde-93b1-4734-9d18-ad5331ebc026)
 
-![WhatsApp Image 2024-04-19 at 11 46 49_af4eaf44](https://github.com/YvanThrimawithana/Smart-Traffic-Management/assets/132426595/1762dbfe-8a7e-40f1-a45c-cd5db430a60e)
+
+![image](https://github.com/YvanThrimawithana/Smart-Traffic-Management-System/assets/132426595/7442d6f2-32a3-431e-a1f2-639f3f6c27c6)
+
+
+
+
+![image](https://github.com/YvanThrimawithana/Smart-Traffic-Management-System/assets/132426595/3ec38a19-2f8c-416b-96c8-0c596f5d8050)
+
 
 
 ## Authors
